@@ -1,13 +1,16 @@
-# VideoSubMaster - Intelligent Subtitle Processor
+# VideoSubMaster - Cross-Platform Subtitle Processor
 
 ![Batch Processing](https://img.shields.io/badge/Batch-Processing-blue)
 ![FFmpeg](https://img.shields.io/badge/Powered%20by-FFmpeg-orange)
 ![Windows](https://img.shields.io/badge/Platform-Windows-lightgrey)
+![Linux](https://img.shields.io/badge/Platform-Linux-success)
+![MacOS](https://img.shields.io/badge/Platform-MacOS-silver)
 
-VideoSubMaster is a powerful Windows batch script that automates subtitle embedding and burning for video files. Designed for content creators and media archivists, it provides intelligent processing of SRT and ASS subtitle formats with both batch and manual operation modes.
+**Now supporting Windows, Linux and macOS!** VideoSubMaster is a powerful script that automates subtitle embedding and burning for video files across multiple platforms. Designed for content creators and media archivists, it provides intelligent processing of SRT and ASS subtitle formats with both batch and manual operation modes.
 
 ## ✨ Key Features
 
+- **Cross-Platform Support**: Run on Windows (Batch), Linux/macOS (Bash)
 - **Dual Processing Modes**:
   - 🚀 **Soft Embedding**: Fast container-level subtitle embedding (preserves quality)
   - 🔥 **Hard Burning**: Full video re-encoding with burned-in subtitles
@@ -20,9 +23,10 @@ VideoSubMaster is a powerful Windows batch script that automates subtitle embedd
 
 ## ⚙️ System Requirements
 
-1. **Windows OS** (Tested on Windows 10/11)
-2. **[FFmpeg](https://ffmpeg.org/)** installed and added to system PATH
-3. PowerShell access (for timestamp generation)
+| Platform | Requirements |
+|----------|--------------|
+| **Windows** | 1. Windows 10/11<br>2. [FFmpeg](https://ffmpeg.org/) in PATH<br>3. PowerShell access |
+| **Linux/macOS** | 1. Bash shell<br>2. [FFmpeg](https://ffmpeg.org/) installed<br>3. Coreutils (standard on most systems) |
 
 ## 🚀 Getting Started
 
@@ -36,8 +40,13 @@ cd VideoSubMaster
 1. Place your video files (.mkv, .mp4, .avi) in the script directory
 2. Place matching subtitle files (.srt, .ass) with same base filename
 3. Run the script:
-   ```batch
+   ```bash
+   # Windows
    VideoSubMaster.bat
+   
+   # Linux/macOS (make executable first)
+   chmod +x VideoSubMaster.sh
+   ./VideoSubMaster.sh
    ```
 
 ### Workflow Options
@@ -59,40 +68,66 @@ cd VideoSubMaster
 
 ## 📂 File Structure
 
-| File/Folder          | Description                          |
-| -------------------- | ------------------------------------ |
-| `VideoSubMaster.bat` | Main processing script               |
-| `/output`            | Processed video files (auto-created) |
-| `*.srt/ass`          | Subtitle files (match video names)   |
+| File/Folder          | Description                          | Platform       |
+|----------------------|--------------------------------------|----------------|
+| `VideoSubMaster.bat` | Main processing script               | Windows        |
+| `VideoSubMaster.sh`  | Main processing script               | Linux/macOS    |
+| `/output`            | Processed video files (auto-created) | All platforms  |
+| `*.srt/ass`          | Subtitle files (match video names)   | All platforms  |
 
 ## ⏱️ Performance Comparison
 
 | Process Type   | Speed       | Quality Preservation | Output Size     |
 | -------------- | ----------- | -------------------- | --------------- |
-| Soft Subtitles | ⚡ Very Fast | ✅ Original Quality   | Slightly Larger |
-| Hard Subtitles | ⏳ Slower    | ⚠️ Re-encoded         | Variable        |
+| Soft Subtitles | ⚡ Very Fast | ✅ Original Quality  | Slightly Larger |
+| Hard Subtitles | ⏳ Slower    | ⚠️ Re-encoded        | Variable        |
 
 > **Note**: Hard subtitle processing time depends on video resolution, length, and hardware capabilities.
+
+## 🌟 Platform-Specific Notes
+
+### Windows
+- Requires PowerShell for timestamp generation
+- Best performance on Windows 10/11
+
+### Linux/macOS
+- Requires execution permission: `chmod +x VideoSubMaster.sh`
+- Tested on Ubuntu 20.04+ and macOS Big Sur+
+- Uses `date` command for timestamp generation
 
 ## ❓ Frequently Asked Questions
 
 **Q: Why is soft subtitle processing faster?**  
 A: Soft embedding only modifies the container without video re-encoding, while hard burning requires full video processing.
 
-**Q: Can I process videos in subfolders?**  
-A: The current version only processes files in the script directory. For recursive processing, modify the `dir /b` commands.
+**Q: How do I install FFmpeg on Linux/macOS?**  
+```bash
+# Ubuntu/Debian
+sudo apt install ffmpeg
 
-**Q: How do I verify FFmpeg installation?**  
-A: Run `ffmpeg -version` in Command Prompt. If not recognized, [download FFmpeg](https://ffmpeg.org/download.html) and add to PATH.
+# macOS (Homebrew)
+brew install ffmpeg
+```
+
+**Q: Can I process videos in subfolders?**  
+A: The current version only processes files in the script directory. For recursive processing, modify the file search commands.
+
+**Q: Why do I get "Permission denied" on Linux/macOS?**  
+A: Run `chmod +x VideoSubMaster.sh` to make the script executable.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
+We welcome contributions for all platforms! Please follow these steps:
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/improvement`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin feature/improvement`)
 5. Open a pull request
+
+**Platform Contribution Guidelines**:
+- Keep Windows (BAT) and Unix (Bash) implementations consistent
+- Maintain cross-platform file and directory structure
+- Use platform-neutral terminology in documentation
 
 ## 📜 License
 

@@ -162,6 +162,8 @@ if "!mode!"=="smart" goto smart_mode
 :manual_mode
 set "choice="
 :choose_format
+:: echo.
+:: echo 当前处理的视频[%~nx1]
 echo 请选择字幕封装方式: 
 echo.
 echo   🥝 1. 封装为软字幕 [仅支持 .srt]

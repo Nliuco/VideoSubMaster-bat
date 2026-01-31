@@ -306,16 +306,21 @@ batch_process() {
     timestamp=$(get_timestamp)
     
     # 统计变量
-    local total_count=0
-    local processed_count=0
+    total_count=0
+    processed_count=0
     
-    # 使用 find_videos 函数查找视频文件
+    # 使用临时文件存储视频列表（兼容 sh）
+    tmp_file=$(mktemp)
+    find_videos "." > "$tmp_file"
+    
     while IFS= read -r video; do
         [ -z "$video" ] && continue
-        ((total_count++))
+        total_count=$((total_count + 1))
         process_video "$video" "$batch_mode"
-        ((processed_count++))
-    done < <(find_videos ".")
+        processed_count=$((processed_count + 1))
+    done < "$tmp_file"
+    
+    rm -f "$tmp_file"
     
     echo
     if [ "$total_count" -eq 0 ]; then
@@ -348,16 +353,21 @@ manual_process() {
     timestamp=$(get_timestamp)
     
     # 统计变量
-    local total_count=0
-    local processed_count=0
+    total_count=0
+    processed_count=0
     
-    # 使用 find_videos 函数查找视频文件
+    # 使用临时文件存储视频列表（兼容 sh）
+    tmp_file=$(mktemp)
+    find_videos "." > "$tmp_file"
+    
     while IFS= read -r video; do
         [ -z "$video" ] && continue
-        ((total_count++))
+        total_count=$((total_count + 1))
         process_video "$video" "manual"
-        ((processed_count++))
-    done < <(find_videos ".")
+        processed_count=$((processed_count + 1))
+    done < "$tmp_file"
+    
+    rm -f "$tmp_file"
     
     echo
     if [ "$total_count" -eq 0 ]; then

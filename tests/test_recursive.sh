@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # ========================================================
 # 递归子目录处理功能测试脚本
 # ========================================================
@@ -13,24 +13,19 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC_DIR="$SCRIPT_DIR/../src"
 TEST_DIR="$SCRIPT_DIR/fixtures"
 
-# 测试颜色
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
-
 # 测试计数器
 TESTS_PASSED=0
 TESTS_FAILED=0
 
 # 测试函数
 test_pass() {
-    echo -e "${GREEN}✅ PASS${NC}: $1"
-    ((TESTS_PASSED++))
+    echo "✅ PASS: $1"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 test_fail() {
-    echo -e "${RED}❌ FAIL${NC}: $1"
-    ((TESTS_FAILED++))
+    echo "❌ FAIL: $1"
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 # 导入脚本中的函数（提取关键函数进行测试）
@@ -172,14 +167,14 @@ echo
 echo "=========================================="
 echo "📊 测试结果汇总"
 echo "=========================================="
-echo -e "通过: ${GREEN}$TESTS_PASSED${NC}"
-echo -e "失败: ${RED}$TESTS_FAILED${NC}"
+echo "通过: $TESTS_PASSED"
+echo "失败: $TESTS_FAILED"
 echo
 
 if [ "$TESTS_FAILED" -eq 0 ]; then
-    echo -e "${GREEN}🎉 所有测试通过！${NC}"
+    echo "🎉 所有测试通过！"
     exit 0
 else
-    echo -e "${RED}⚠️ 存在失败的测试，请检查！${NC}"
+    echo "⚠️ 存在失败的测试，请检查！"
     exit 1
 fi

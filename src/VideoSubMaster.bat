@@ -1,6 +1,7 @@
 ﻿:: ========================================================
-:: VideoSubMaster - 视频字幕处理大师 v1.0
+:: VideoSubMaster - 视频字幕处理大师 v1.1
 :: 功能：批量/手动处理视频字幕（软字幕封装/硬字幕烧录）
+:: 新增：递归子目录处理功能
 :: 作者：[Pianone]
 :: 日期：2025-06-02 02:39 am
 :: ========================================================
@@ -11,6 +12,10 @@ echo off
 chcp 65001 > nul
 setlocal enabledelayedexpansion
 
+:: 全局变量
+set "RECURSIVE_MODE=0"
+set "RECURSIVE_DEPTH=5"
+
 :: 创建输出目录（如果不存在）
 if not exist "output" (
     mkdir "output" >nul 2>&1
@@ -19,28 +24,99 @@ if not exist "output" (
 :: 主菜单函数
 :main_menu
 cls
-echo ===================== 视频字幕处理大师 v1.0 =====================
+echo ===================== 视频字幕处理大师 v1.1 =====================
 echo.
+
+:: 显示递归模式状态
+if "!RECURSIVE_MODE!"=="1" (
+    echo     📂 递归模式: ✅ 已开启 ^(深度: !RECURSIVE_DEPTH!^)
+) else (
+    echo     📂 递归模式: ❌ 已关闭
+)
 echo.
 echo     🚀🚀🚀            请选择操作模式：           🚀🚀🚀    
 echo.
 echo     🕹 🕹 🕹    1. 自动处理模式[批量处理所有视频]   🕹 🕹 🕹 
 echo     ✏ ✏ ✏    2. 手动处理模式[逐个处理视频]       ✏ ✏ ✏ 
+echo     📁📁📁    3. 递归模式设置[处理子目录]         📁📁📁 
 echo     ⛩ ⛩ ⛩    0. 退出程序                         ⛩ ⛩ ⛩ 
 echo.
 echo =================================================================
 echo.
 
-set /p "menu_choice=请输入选项数字 [0-2]："
+set /p "menu_choice=请输入选项数字 [0-3]："
 
 if "%menu_choice%"=="1" goto auto_process_menu
 if "%menu_choice%"=="2" goto manual_process
+if "%menu_choice%"=="3" goto recursive_settings_menu
 if "%menu_choice%"=="0" exit /b
 
 echo.
 echo ❌ 无效输入，请重新输入！
 timeout /t 2 > nul
 goto main_menu
+
+:: 递归模式设置菜单
+:recursive_settings_menu
+cls
+echo ===================== 递归处理设置 =====================
+echo.
+
+if "!RECURSIVE_MODE!"=="1" (
+    echo     当前状态: ✅ 已开启 ^(深度: !RECURSIVE_DEPTH!^)
+) else (
+    echo     当前状态: ❌ 已关闭
+)
+echo.
+echo     1. 开启递归模式
+echo     2. 关闭递归模式
+echo     3. 设置递归深度 ^(当前: !RECURSIVE_DEPTH!^)
+echo     4. 返回主菜单
+echo.
+echo =========================================================
+echo.
+
+set /p "recursive_choice=请输入选项数字 [1-4]："
+
+if "!recursive_choice!"=="1" (
+    set "RECURSIVE_MODE=1"
+    echo.
+    echo ✅ 递归模式已开启
+    timeout /t 1 > nul
+    goto recursive_settings_menu
+)
+if "!recursive_choice!"=="2" (
+    set "RECURSIVE_MODE=0"
+    echo.
+    echo ❌ 递归模式已关闭
+    timeout /t 1 > nul
+    goto recursive_settings_menu
+)
+if "!recursive_choice!"=="3" (
+    echo.
+    set /p "new_depth=请输入递归深度 (1-10，当前: !RECURSIVE_DEPTH!)："
+    :: 验证输入是否为有效数字
+    set "valid=1"
+    for /f "delims=0123456789" %%i in ("!new_depth!") do set "valid=0"
+    if "!valid!"=="1" (
+        if !new_depth! GEQ 1 if !new_depth! LEQ 10 (
+            set "RECURSIVE_DEPTH=!new_depth!"
+            echo ✅ 递归深度已设置为: !RECURSIVE_DEPTH!
+        ) else (
+            echo ❌ 无效输入，请输入 1-10 之间的数字
+        )
+    ) else (
+        echo ❌ 无效输入，请输入 1-10 之间的数字
+    )
+    timeout /t 1 > nul
+    goto recursive_settings_menu
+)
+if "!recursive_choice!"=="4" goto main_menu
+
+echo.
+echo ❌ 无效输入，请重新输入！
+timeout /t 1 > nul
+goto recursive_settings_menu
 
 :: 自动处理模式菜单
 :auto_process_menu
@@ -77,18 +153,44 @@ goto auto_process_menu
 :: 批量处理所有视频
 :batch_process
 cls
-echo 📦 批量处理模式已启用
+
+if "!RECURSIVE_MODE!"=="1" (
+    echo 📦 批量处理模式已启用 [递归模式 - 深度: !RECURSIVE_DEPTH!]
+) else (
+    echo 📦 批量处理模式已启用
+)
 echo.
 
 :: 获取时间戳
 for /f %%a in ('powershell -Command "Get-Date -Format yyyyMMdd_HHmmss" 2^>nul') do set "timestamp=%%a"
 
-:: 修复点：安全遍历文件[处理特殊字符]
-for /f "delims=" %%v in ('dir /b *.mkv *.mp4 *.avi 2^>nul') do (
-    call :process_video "%%v" "!batch_mode!"
+:: 统计变量
+set "total_count=0"
+set "processed_count=0"
+
+:: 根据递归模式选择查找方式
+if "!RECURSIVE_MODE!"=="1" (
+    :: 递归模式：使用 /s 参数查找子目录
+    for /f "delims=" %%v in ('dir /b /s *.mkv *.mp4 *.avi 2^>nul') do (
+        set /a "total_count+=1"
+        call :process_video "%%v" "!batch_mode!"
+        set /a "processed_count+=1"
+    )
+) else (
+    :: 普通模式：仅当前目录
+    for /f "delims=" %%v in ('dir /b *.mkv *.mp4 *.avi 2^>nul') do (
+        set /a "total_count+=1"
+        call :process_video "%%v" "!batch_mode!"
+        set /a "processed_count+=1"
+    )
 )
 
-echo 🏁 所有文件处理完成。
+echo.
+if "!total_count!"=="0" (
+    echo ⚠️  未找到任何视频文件
+) else (
+    echo 🏁 所有文件处理完成。共处理 !processed_count! 个视频。
+)
 echo.
 pause
 goto main_menu
@@ -96,7 +198,12 @@ goto main_menu
 :: 手动处理模式
 :manual_process
 cls
-echo 📋 手动处理模式已启用
+
+if "!RECURSIVE_MODE!"=="1" (
+    echo 📋 手动处理模式已启用 [递归模式 - 深度: !RECURSIVE_DEPTH!]
+) else (
+    echo 📋 手动处理模式已启用
+)
 echo.
 echo     tips: 🤔 硬字幕:  即为内嵌烧录字幕, 对视频每一帧进行处理, 耗时往往很长, 由于需实时解码视频流并重新编码
 echo                       消耗大量CPU/GPU算力, 但可以保留ass字幕样式，不过字幕会永久写入视频画面，不可移除 
@@ -107,38 +214,63 @@ echo.
 :: 获取时间戳
 for /f %%a in ('powershell -Command "Get-Date -Format yyyyMMdd_HHmmss" 2^>nul') do set "timestamp=%%a"
 
-:: 修复点：安全遍历文件[处理特殊字符]
-for /f "delims=" %%v in ('dir /b *.mkv *.mp4 *.avi 2^>nul') do (
-    call :process_video "%%v" "manual"
+:: 统计变量
+set "total_count=0"
+set "processed_count=0"
+
+:: 根据递归模式选择查找方式
+if "!RECURSIVE_MODE!"=="1" (
+    :: 递归模式：使用 /s 参数查找子目录
+    for /f "delims=" %%v in ('dir /b /s *.mkv *.mp4 *.avi 2^>nul') do (
+        set /a "total_count+=1"
+        call :process_video "%%v" "manual"
+        set /a "processed_count+=1"
+    )
+) else (
+    :: 普通模式：仅当前目录
+    for /f "delims=" %%v in ('dir /b *.mkv *.mp4 *.avi 2^>nul') do (
+        set /a "total_count+=1"
+        call :process_video "%%v" "manual"
+        set /a "processed_count+=1"
+    )
 )
 
-echo 🏁 所有文件处理完成。
+echo.
+if "!total_count!"=="0" (
+    echo ⚠️  未找到任何视频文件
+) else (
+    echo 🏁 所有文件处理完成。共处理 !processed_count! 个视频。
+)
 echo.
 pause
 goto main_menu
 
-:: 视频处理子程序[以下部分保持不变]
+:: 视频处理子程序
 :process_video
 set "video=%~1"
 set "mode=%~2"
-set "basename=%~n1"
+set "video_dir=%~dp1"
+set "video_filename=%~nx1"
+set "basename_noext=%~n1"
 set "subtitle="
 set "subext="
 
-:: 修复点：清理文件名中的特殊字符
-set "clean_name=!basename!"
+:: 完整路径的基础名（不含扩展名）
+set "full_basename=%~dpn1"
+
+:: 清理文件名中的特殊字符（仅用于输出文件名）
+set "clean_name=!basename_noext!"
 set "clean_name=!clean_name:[=!"
 set "clean_name=!clean_name:]=!"
 set "clean_name=!clean_name:(=!"
 set "clean_name=!clean_name:)=!"
-set "basename=!clean_name!"
 
-:: 查找字幕
-if exist "!basename!.ass" (
-    set "subtitle=!basename!.ass"
+:: 查找字幕（在视频所在目录查找）
+if exist "!full_basename!.ass" (
+    set "subtitle=!full_basename!.ass"
     set "subext=ass"
-) else if exist "!basename!.srt" (
-    set "subtitle=!basename!.srt"
+) else if exist "!full_basename!.srt" (
+    set "subtitle=!full_basename!.srt"
     set "subext=srt"
 ) else (
     echo ✈  跳过：未找到字幕 → %~1
@@ -146,10 +278,27 @@ if exist "!basename!.ass" (
     goto :EOF
 )
 
+:: 创建输出目录（递归模式下保持目录结构）
+set "output_dir=output"
+if "!RECURSIVE_MODE!"=="1" (
+    :: 获取相对路径
+    set "rel_path=!video_dir!"
+    :: 移除当前目录前缀，保留子目录结构
+    for %%I in (.) do set "current_dir=%%~fI\"
+    set "rel_path=!rel_path:%current_dir%=!"
+    if not "!rel_path!"=="" (
+        set "output_dir=output\!rel_path!"
+    )
+)
+
+:: 确保输出目录存在
+if not exist "!output_dir!" mkdir "!output_dir!" >nul 2>&1
+
 echo.
-echo 🔎 处理视频：%~nx1
+echo 🔎 处理视频：%~1
 echo 📝 字幕文件：!subtitle!
 echo 📄 字幕格式：.!subext!
+if "!RECURSIVE_MODE!"=="1" echo 📂 输出目录：!output_dir!
 echo.
 
 :: 根据模式处理视频
@@ -211,11 +360,10 @@ goto :process_end
 :: 软字幕处理 
 :soft_sub
 if /i "!subext!"=="srt" (
-    :: 修改点：输出到output文件夹
-    set "output=output\!basename!_soft_!timestamp!.mp4"
+    :: 输出到对应目录（支持递归模式）
+    set "output=!output_dir!\!clean_name!_soft_!timestamp!.mp4"
     echo 🔧 正在封装软字幕[可能需要几分钟]...
-    :: ffmpeg -i "!video!" -i "!subtitle!" -c copy -c:s mov_text "!output!" > nul 2>&1
-    ffmpeg -i "!video!" -i "!subtitle!" -c copy -c:s mov_text "!output!"
+    ffmpeg -i "!video!" -i "!subtitle!" -c copy -c:s mov_text "!output!" -y
     echo.
     echo ✅ 输出文件：!output!
     goto :process_end
@@ -237,18 +385,15 @@ goto confirm_convert
 
 :: 转换ASS到SRT
 :convert_ass_to_srt
-set "srtfile=!basename!_converted_!timestamp!.srt"
+set "srtfile=!output_dir!\!clean_name!_converted_!timestamp!.srt"
 echo 🔧 正在转换字幕格式[可能需要几分钟]...
-:: ffmpeg -i "!subtitle!" "!srtfile!" > nul 2>&1
-ffmpeg -i "!subtitle!" "!srtfile!"
-    :: 修改点：输出到output文件夹
-    set "output=output\!basename!_soft_!timestamp!.mp4"
+ffmpeg -i "!subtitle!" "!srtfile!" -y
+:: 输出到对应目录（支持递归模式）
+set "output=!output_dir!\!clean_name!_soft_!timestamp!.mp4"
 echo.
 echo 🔁 已转换为 .srt：!srtfile!
 echo 🔧 正在封装软字幕[可能需要几分钟]...
-:: ffmpeg -i "!video!" -i "!srtfile!" -c copy -c:s mov_text "!output!" > nul 2>&1
-:: ffmpeg -i "!video!" -i "!srtfile!" -c copy -c:s mov_text "!output!"
-ffmpeg -i "!video!" -i "!srtfile!" -c:v copy -c:a copy -c:s mov_text "!output!"
+ffmpeg -i "!video!" -i "!srtfile!" -c:v copy -c:a copy -c:s mov_text "!output!" -y
 echo.
 echo ✅ 输出文件：!output!
 goto :process_end
@@ -260,11 +405,10 @@ if /i "!subext!"=="ass" (
 ) else (
     set "filter=subtitles='!subtitle!'"
 )
-    :: 修改点：输出到output文件夹
-    set "output=output\!basename!_hard_!timestamp!.mp4"
+:: 输出到对应目录（支持递归模式）
+set "output=!output_dir!\!clean_name!_hard_!timestamp!.mp4"
 echo 🔧 正在烧录硬字幕[可能需要较长时间，请耐心等待]...
-:: ffmpeg -i "!video!" -vf "!filter!" -c:a copy "!output!" > nul 2>&1
-ffmpeg -i "!video!" -vf "!filter!" -c:a copy "!output!"
+ffmpeg -i "!video!" -vf "!filter!" -c:a copy "!output!" -y
 echo.
 echo ✅ 输出文件：!output!
 goto :process_end
